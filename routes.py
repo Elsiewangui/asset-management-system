@@ -9,8 +9,8 @@ from sqlalchemy.orm import Session
 from database import get_db
 
 # Import your table model
-from models import Asset
-from schemas import AssetCreate, AssetResponse
+from models import Asset,User
+from schemas import AssetCreate, AssetResponse, UserResponse, UserCreate
 
 # Create router object (this holds all our endpoints)
 router = APIRouter(

@@ -3,6 +3,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from database import engine, Base
 from routes import router as asset_router
 
+from user_routes import router as user_router
+
+
 # Create tables
 Base.metadata.create_all(bind=engine)
 
@@ -21,6 +24,10 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Register routers
+app.include_router(asset_router)
+app.include_router(user_router)
 
 # Include routes
 app.include_router(asset_router)

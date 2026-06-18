@@ -44,3 +44,33 @@ class AssetResponse(AssetBase):
 
     class Config:
         from_attributes = True
+
+
+# USER SCHEMAS
+class UserBase(BaseModel):
+    """
+    Shared user fields
+    """
+
+    username: str
+    email: str
+    department: str | None = None
+    role: str = "employee"
+
+
+class UserCreate(UserBase):
+    """
+    Used when creating a user
+    """
+    password: str
+
+
+class UserResponse(UserBase):
+    """
+    Returned to API users
+    """
+
+    id: int
+
+    class Config:
+        from_attributes = True
