@@ -11,7 +11,7 @@ from database import get_db
 
 # Import your table model
 from models import Asset,User, AssetAssignment
-from schemas import AssetCreate, AssetResponse, UserResponse, UserCreate, AssignmentCreate, AssignmentResponse
+from schemas import AssetCreate, AssetResponse, UserResponse, UserCreate, AssignmentCreate, AssignmentResponse, UserUpdate
 
 # Create router object (this holds all our endpoints)
 router = APIRouter(
@@ -54,7 +54,6 @@ def get_assets(db: Session = Depends(get_db)):
 
     return assets
 
-# CREATE ASSIGNMENT
 @router.post("/assignments", response_model=AssignmentResponse)
 def create_assignment(
     assignment: AssignmentCreate,
@@ -73,6 +72,13 @@ def create_assignment(
         raise HTTPException(
             status_code=404,
             detail="Asset not found"
+        )
+
+    # Prevent double assignment
+    if asset.status == "assigned":
+        raise HTTPException(
+            status_code=400,
+            detail="Asset is already assigned"
         )
 
     # Check if user exists
@@ -94,7 +100,6 @@ def create_assignment(
         notes=assignment.notes
     )
 
-    # Update asset status
     asset.status = "assigned"
 
     db.add(new_assignment)
@@ -244,3 +249,39 @@ def delete_asset(asset_id: int, db: Session = Depends(get_db)):
     db.commit()
 
     return {"message": "Asset deleted successfully"}
+
+# GET ASSIGNMENT HISTORY FOR AN ASSET
+@router.get("/{asset_id}/history")
+def get_asset_history(
+    asset_id: int,
+    db: Session = Depends(get_db)
+):
+    """
+    Return assignment history for a specific asset
+    """
+
+    asset = db.query(Asset).filter(
+        Asset.id == asset_id
+    ).first()
+
+    if not asset:
+        raise HTTPException(
+            status_code=404,
+            detail="Asset not found"
+        )
+
+    assignments = db.query(AssetAssignment).filter(
+        AssetAssignment.asset_id == asset_id
+    ).all()
+
+    return assignments
+
+@router.get(
+    "/{asset_id}/history",
+    response_model=list[AssignmentResponse]
+)
+def get_asset_history(
+    asset_id: int,
+    db: Session = Depends(get_db)
+):
+    ...

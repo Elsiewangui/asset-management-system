@@ -74,6 +74,12 @@ class UserResponse(UserBase):
     class Config:
         from_attributes = True
 
+class UserUpdate(BaseModel):
+    username: str
+    email: str
+    department: str | None = None
+    role: str = "employee"
+
 # ASSIGNMENT SCHEMAS
 
 class AssignmentBase(BaseModel):
@@ -103,6 +109,17 @@ class AssignmentResponse(AssignmentBase):
 
     id: int
     returned_date: Optional[date] = None
+
+    class Config:
+        from_attributes = True
+
+class AssignmentResponse(BaseModel):
+    id: int
+    asset_id: int
+    user_id: int
+    assigned_date: date
+    returned_date: date | None = None
+    notes: str | None = None
 
     class Config:
         from_attributes = True
