@@ -1,4 +1,3 @@
-# schemas.py
 
 # Pydantic is used for data validation
 from pydantic import BaseModel
@@ -71,6 +70,39 @@ class UserResponse(UserBase):
     """
 
     id: int
+
+    class Config:
+        from_attributes = True
+
+# ASSIGNMENT SCHEMAS
+
+class AssignmentBase(BaseModel):
+    """
+    Shared fields for asset assignments
+    """
+
+    asset_id: int
+    user_id: int
+    assigned_date: date
+    notes: Optional[str] = None
+
+
+
+class AssignmentCreate(AssignmentBase):
+    """
+    Used when assigning an asset to a user
+    """
+    pass
+
+
+class AssignmentResponse(AssignmentBase):
+    """
+    Returned by the API
+    Includes database-generated fields
+    """
+
+    id: int
+    returned_date: Optional[date] = None
 
     class Config:
         from_attributes = True

@@ -29,8 +29,6 @@ app.add_middleware(
 app.include_router(asset_router)
 app.include_router(user_router)
 
-# Include routes
-app.include_router(asset_router)
 
 @app.get("/")
 def home():
