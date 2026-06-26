@@ -10,8 +10,8 @@ from sqlalchemy.orm import Session
 from database import get_db
 
 # Import your table model
-from models import Asset,User, AssetAssignment
-from schemas import AssetCreate, AssetResponse, UserResponse, UserCreate, AssignmentCreate, AssignmentResponse, UserUpdate
+from models import Asset,User, AssetAssignment, MaintenanceRecord
+from schemas import AssetCreate, AssetResponse, UserResponse, UserCreate, AssignmentCreate, AssignmentResponse, UserUpdate, MaintenanceCreate, MaintenanceResponse,MaintenanceUpdate
 
 # Create router object (this holds all our endpoints)
 router = APIRouter(
@@ -192,6 +192,141 @@ def dashboard_stats(db: Session = Depends(get_db)):
         "total_assignments": total_assignments
     }
 
+
+# GET ASSIGNMENT HISTORY FOR AN ASSET
+@router.get("/{asset_id}/history")
+def get_asset_history(
+    asset_id: int,
+    db: Session = Depends(get_db)
+):
+    """
+    Return assignment history for a specific asset
+    """
+
+    asset = db.query(Asset).filter(
+        Asset.id == asset_id
+    ).first()
+
+    if not asset:
+        raise HTTPException(
+            status_code=404,
+            detail="Asset not found"
+        )
+
+    assignments = db.query(AssetAssignment).filter(
+        AssetAssignment.asset_id == asset_id
+    ).all()
+
+    return assignments
+
+@router.get(
+    "/{asset_id}/history",
+    response_model=list[AssignmentResponse]
+)
+def get_asset_history(
+    asset_id: int,
+    db: Session = Depends(get_db)
+):
+    ...
+@router.post(
+    "/maintenance",
+    response_model=MaintenanceResponse
+)
+def create_maintenance_record(
+    maintenance: MaintenanceCreate,
+    db: Session = Depends(get_db)
+):
+    """
+    Create a maintenance record for an asset.
+    """
+
+    # Check if asset exists
+    asset = db.query(Asset).filter(
+        Asset.id == maintenance.asset_id
+    ).first()
+
+    if not asset:
+        raise HTTPException(
+            status_code=404,
+            detail="Asset not found"
+        )
+
+    # Create maintenance record
+    new_record = MaintenanceRecord(
+        asset_id=maintenance.asset_id,
+        issue_description=maintenance.issue_description,
+        issue_date=maintenance.issue_date
+    )
+
+    # Update asset status
+    asset.status = "under_repair"
+
+    db.add(new_record)
+    db.commit()
+    db.refresh(new_record)
+
+    return new_record
+
+@router.get(
+    "/maintenance",
+    response_model=list[MaintenanceResponse]
+)
+def get_maintenance_records(
+    db: Session = Depends(get_db)
+):
+    """
+    Return all maintenance records.
+    """
+
+    records = db.query(MaintenanceRecord).all()
+
+    return records
+
+@router.put(
+    "/maintenance/{record_id}",
+    response_model=MaintenanceResponse
+)
+def update_maintenance_record(
+    record_id: int,
+    maintenance: MaintenanceUpdate,
+    db: Session = Depends(get_db)
+):
+    """
+    Update a maintenance record.
+    """
+
+    # Find maintenance record
+    record = db.query(MaintenanceRecord).filter(
+        MaintenanceRecord.id == record_id
+    ).first()
+
+    if not record:
+        raise HTTPException(
+            status_code=404,
+            detail="Maintenance record not found"
+        )
+
+    # Update fields
+    record.repair_description = maintenance.repair_description
+    record.repair_date = maintenance.repair_date
+    record.repair_cost = maintenance.repair_cost
+    record.status = maintenance.status
+
+    # If repair completed, update asset status
+    if maintenance.status == "completed":
+
+        asset = db.query(Asset).filter(
+            Asset.id == record.asset_id
+        ).first()
+
+        if asset:
+            asset.status = "available"
+
+    db.commit()
+    db.refresh(record)
+
+    return record
+
 # GET SINGLE ASSET
 @router.get("/{asset_id}", response_model=AssetResponse)
 def get_asset(asset_id: int, db: Session = Depends(get_db)):
@@ -206,7 +341,6 @@ def get_asset(asset_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Asset not found")
 
     return asset
-
 
 
 # UPDATE ASSET
@@ -250,38 +384,3 @@ def delete_asset(asset_id: int, db: Session = Depends(get_db)):
 
     return {"message": "Asset deleted successfully"}
 
-# GET ASSIGNMENT HISTORY FOR AN ASSET
-@router.get("/{asset_id}/history")
-def get_asset_history(
-    asset_id: int,
-    db: Session = Depends(get_db)
-):
-    """
-    Return assignment history for a specific asset
-    """
-
-    asset = db.query(Asset).filter(
-        Asset.id == asset_id
-    ).first()
-
-    if not asset:
-        raise HTTPException(
-            status_code=404,
-            detail="Asset not found"
-        )
-
-    assignments = db.query(AssetAssignment).filter(
-        AssetAssignment.asset_id == asset_id
-    ).all()
-
-    return assignments
-
-@router.get(
-    "/{asset_id}/history",
-    response_model=list[AssignmentResponse]
-)
-def get_asset_history(
-    asset_id: int,
-    db: Session = Depends(get_db)
-):
-    ...

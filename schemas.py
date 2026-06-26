@@ -1,7 +1,7 @@
 
 # Pydantic is used for data validation
 from pydantic import BaseModel
-from datetime import date
+from datetime import date, datetime
 from typing import Optional
 
 
@@ -120,6 +120,34 @@ class AssignmentResponse(BaseModel):
     assigned_date: date
     returned_date: date | None = None
     notes: str | None = None
+
+    class Config:
+        from_attributes = True
+
+class MaintenanceBase(BaseModel):
+    asset_id: int
+    issue_description: str
+    issue_date: date
+
+class MaintenanceCreate(MaintenanceBase):
+    pass
+
+class MaintenanceResponse(MaintenanceBase):
+    id: int
+    repair_description: str | None = None
+    repair_date: date | None = None
+    repair_cost: float | None = None
+    status: str
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+class MaintenanceUpdate(BaseModel):
+    repair_description: str | None = None
+    repair_date: date | None = None
+    repair_cost: float | None = None
+    status: str
 
     class Config:
         from_attributes = True
